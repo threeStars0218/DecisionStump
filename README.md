@@ -19,6 +19,9 @@ int main() {
     std::vector< int > lab = { 1, -1, -1, 1 };
     bool one_side = false;
     decisionstump dstump = decisionstump( dat, lab, one_side );
+
     return 0;
 }
 ```
+The constructer needs 3 argument:
+- A data matrix $S \in \mathbb{R}^{n \times d}$, each row is a vector on $\mathbb{R}^{d}$.
