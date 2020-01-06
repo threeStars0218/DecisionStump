@@ -15,12 +15,12 @@ using LAB = std::vector< int >;
 using DIST = std::vector< double >;
 
 using SENSE = bool; // true -> h(x) = 1 if x ≥ θ else 0
-using EDGE = double; // エッジ
-using THR = double; // 閾値
-using COMP = int; // どの次元で比較したか
+using EDGE = double;
+using THR = double;
+using COMP = int;
 using INDEX = size_t;
-using HYPOTHESIS_1D = std::pair< THR, SENSE >; // 1次元データに対する仮説. (閾値, 不等号の向き) の二つ組で表現.;
-using HYPOTHESIS = std::pair< COMP, HYPOTHESIS_1D >;// 仮説.
+using HYPOTHESIS_1D = std::pair< THR, SENSE >;
+using HYPOTHESIS = std::pair< COMP, HYPOTHESIS_1D >;
 
 decisionstump_1d::decisionstump_1d() {};
 decisionstump_1d::decisionstump_1d( DAT_1D data_
@@ -88,8 +88,8 @@ std::pair< EDGE, HYPOTHESIS_1D > decisionstump_1d::stump( DIST dist ) {
         int idx = k;
         while (idx < this->m && this->sorted_data[idx] == this->sorted_data[idx+1]) ++idx;
         THR  theta_tmp =  (this->sorted_data[idx] + this->sorted_data[idx+1]) / 2.0;
-        if (idx == this->m-1) theta_tmp = this->sorted_data[m-1] + this->eps;
-        // THR  theta_tmp = (this->sorted_data[k] + this->sorted_data[k+1]) / 2.0;
+        if (idx == this->m-1)
+            theta_tmp = this->sorted_data[m-1] + this->eps;
 
         for (int s=k; s<idx+1; ++s) {
             edge_1 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], true);
@@ -141,9 +141,4 @@ MATRIX decisionstump_1d::all_edge_vector( const DAT &dat, const LAB &lab, const 
     }
     return ev_mat;
 }
-
-// double decisionstump_1d::flip_prediction( THR theta, EDGE edge, INDEX idx, SENSE sns, DIST dist ) {
-//     double yh = this->sorted_label[idx] * this->h( theta, this->sorted_data[idx], sns );
-//     return edge + 2 * dist[ this->sorted_index[idx] ] * yh;
-// }
 

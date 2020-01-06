@@ -11,8 +11,8 @@ private:
     std::vector< int > label;
     std::vector< decisionstump_1d > dstumps;
     bool one_side;
-    size_t m; // サンプル数
-    size_t d; // 各サンプルの次元数
+    size_t m; // number of example
+    size_t d; // dimension of each example
     size_t number_of_stump;
 public:
     decisionstump();
@@ -20,7 +20,6 @@ public:
     std::pair< size_t, std::pair< double, bool > > stump( std::vector< double > );
     std::vector< double > edge_vector( std::vector< double > );
     std::vector< std::vector< double > > all_edge_vector_at( size_t );
-    // std::pair< std::vector< double >, std::vector< std::vector< double > > > all_edge_vector_with_edge_at( size_t );
     int h( double, double, bool );
     size_t get_number_of_stump();
     std::vector< double > get_threshoulds_at( size_t );

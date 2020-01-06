@@ -21,11 +21,11 @@ public:
     decisionstump_1d( std::vector< double >, std::vector< int >, bool );
     std::pair< double, std::pair< double, bool > > stump_one_side( std::vector< double > );
     std::pair< double, std::pair< double, bool > > stump( std::vector< double > );
-    double naive_calc_edge( double, std::vector< double >, bool ); // naive にエッジを計算する関数.
+    double naive_calc_edge( double, std::vector< double >, bool );
     std::vector< std::vector< double > > all_edge_vector( const std::vector< std::vector< double > >&
                                                         , const std::vector< int >&
                                                         , const size_t& );
-    int h( double, double, bool ); // 仮説, 引数は(閾値, 値)の二つ組.
+    int h( double, double, bool );
     std::vector< double > get_threshoulds();
 };
 

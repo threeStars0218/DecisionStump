@@ -24,4 +24,7 @@ int main() {
 }
 ```
 The constructer needs 3 argument:
-- A data matrix $ S \in \mathbb{R}^{n \times d}$ each row is a vector on $ \mathbb{R}^{d} $.
+- A data matrix.
+- A label vector.
+- A boolean that determine one-side hypothesis or not.
+

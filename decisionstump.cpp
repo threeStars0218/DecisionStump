@@ -14,13 +14,12 @@
 #define DIST    std::vector< double >
 
 #define SENSE        bool   // true -> h(x) = 1 if x ≥ θ else 0
-#define EDGE         double // エッジ
-#define THR          double // 閾値
-#define COMP         int    // どの次元で比較したか
+#define EDGE         double
+#define THR          double
+#define COMP         int
 #define INDEX        size_t
-#define HYPOTHESIS_1D std::pair< THR, SENSE > // 1次元データに対する仮説. (閾値, 不等号の向き) の二つ組で表現.
-// #define HYPOTHESIS    std::pair< INDEX, std::pair< EDGE, HYPOTHESIS_1D > > // 仮説.
-#define HYPOTHESIS    std::pair< INDEX, HYPOTHESIS_1D > // 仮説.
+#define HYPOTHESIS_1D std::pair< THR, SENSE >
+#define HYPOTHESIS    std::pair< INDEX, HYPOTHESIS_1D >
 
 decisionstump::decisionstump() {};
 decisionstump::decisionstump( DAT data_
@@ -43,8 +42,6 @@ decisionstump::decisionstump( DAT data_
     std::cout << "done!" << std::endl;
 }
 
-// HYPOTHESIS_1D std::pair< THR, SENSE > // 1次元データに対する仮説. (閾値, 不等号の向き) の二つ組で表現.
-// HYPOTHESIS    std::pair< INDEX, HYPOTHESIS_1D > // 仮説.
 HYPOTHESIS decisionstump::stump( DIST dist ) {
     std::pair< EDGE, HYPOTHESIS_1D > edge_and_hyp = dstumps[0].stump( dist );
     INDEX max_edge_index = 0;
@@ -57,10 +54,8 @@ HYPOTHESIS decisionstump::stump( DIST dist ) {
         }
     }
     return std::make_pair( max_edge_index, edge_and_hyp.second );
-//     return std::make_pair(max_edge_index, hypothesis);
 }
 
-// i番目のデータを第k成分でstump
 int decisionstump::h( THR theta, double x, SENSE sns ) {
     int prediction;
     if (sns) {
@@ -71,8 +66,6 @@ int decisionstump::h( THR theta, double x, SENSE sns ) {
     return prediction;
 }
 
-// HYPOTHESIS_1D std::pair< THR, SENSE > // 1次元データに対する仮説. (閾値, 不等号の向き) の二つ組で表現.
-// HYPOTHESIS    std::pair< INDEX, HYPOTHESIS_1D > // 仮説.
 VECTOR decisionstump::edge_vector( DIST dist ) {
     VECTOR     u( this->m, 0.0 );
     std::pair< INDEX, HYPOTHESIS_1D > idx_and_hyp = this->stump( dist );
@@ -86,10 +79,3 @@ VECTOR decisionstump::edge_vector( DIST dist ) {
     return u;
 }
 
-// MATRIX decisionstump::all_edge_vector_at( size_t idx ) {
-//     std::cout << "idx = " << idx << std::endl;
-//     MATRIX eg_mat = this->dstumps[idx].all_edge_vector( this->data, this->label, idx );
-//     return eg_mat;
-// }
-// std::pair< VECTOR, MATRIX > all_edge_vector_with_edge_at( size_t ) {
-// }
