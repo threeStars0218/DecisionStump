@@ -1,144 +1,277 @@
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-
 #include "decisionstump_1d.hpp"
 
-using MATRIX = std::vector< std::vector< double > >;
-using VECTOR = std::vector< double >;
-using INDICES = std::vector< size_t >;
-using DAT = std::vector< std::vector< double > >;
-using DAT_1D = std::vector< double >;
-using LAB = std::vector< int >;
-using DIST = std::vector< double >;
+int
+predict(double threshould,
+        bool sense,
+        double data)
+{
+    if (sense)
+        return (data > threshould ? 1 : -1);
+    else
+        return (data < threshould ? 1 : -1);
+}
 
-using SENSE = bool; // true -> h(x) = 1 if x ≥ θ else 0
-using EDGE = double;
-using THR = double;
-using COMP = int;
-using INDEX = size_t;
-using HYPOTHESIS_1D = std::pair< THR, SENSE >;
-using HYPOTHESIS = std::pair< COMP, HYPOTHESIS_1D >;
+decisionstump_1d::
+decisionstump_1d() {};
 
-decisionstump_1d::decisionstump_1d() {};
-decisionstump_1d::decisionstump_1d( DAT_1D data_
-                                  , LAB    label_
-                                  , bool   one_side_
-                                  )
-    : sorted_index( label_.size() )
-    , sorted_data( label_.size() )
-    , sorted_label( label_.size() )
-    , m( label_.size() )
-    , one_side( one_side_ )
+decisionstump_1d::
+decisionstump_1d(std::vector<double> data_,
+                 std::vector<int> label_,
+                 bool one_side_)
+    : sorted_index(label_.size())
+    , sorted_data(label_.size())
+    , sorted_label(label_.size())
+    , m(label_.size())
+    , one_side(one_side_)
     , eps( 0.5 )
 {
-    std::iota( this->sorted_index.begin(), this->sorted_index.end(), 0 );
-    std::sort( this->sorted_index.begin()
-             , this->sorted_index.end()
-             , [&data_] (size_t i, size_t j) {return data_[i] < data_[j];} );
-    for (int i=0; i<this->m; ++i) {
+    // =====
+    // sort data to handle easily
+    // =====
+    std::iota(this->sorted_index.begin(), this->sorted_index.end(), 0);
+    std::sort(this->sorted_index.begin(),
+              this->sorted_index.end(),
+              [&data_] (size_t i, size_t j) {return data_[i] < data_[j];});
+    for(int i=0; i<this->m; ++i) {
         this->sorted_data[i]  = data_[ this->sorted_index[i] ];
         this->sorted_label[i] = label_[ this->sorted_index[i] ];
     }
 
-    this->threshoulds.push_back( this->sorted_data[0] - this->eps );
-    for (int i=0; i<this->m-1; ++i) {
-        while (i < this->m-1 && this->sorted_data[i] == this->sorted_data[i+1]) ++i;
-        if (i == this->m-1) break;
-        double thr = (this->sorted_data[i] + this->sorted_data[i+1]) / 2.0;
-        this->threshoulds.push_back( thr );
+    // =====
+    // keep threshoulds, and hypotheses
+    // =====
+    std::vector<double> tmp = this->sorted_data;
+    tmp.erase(std::unique(tmp.begin(), tmp.end()), tmp.end());
+    double thr = tmp[0] - this->eps;
+    this->threshoulds.push_back(thr);
+    std::function<int(double)> f, g;
+    f = std::bind(predict, thr, true, std::placeholders::_1);
+    this->classifiers.push_back(f);
+    if (!one_side) {
+        g = std::bind(predict, thr, false, std::placeholders::_1);
+        this->classifiers.push_back(g);
     }
-    this->threshoulds.push_back( this->sorted_data[m-1] + this->eps );
-}
+    for(int i=0; i<tmp.size()-1; ++i) {
 
-std::pair< EDGE, HYPOTHESIS_1D > decisionstump_1d::stump_one_side( DIST dist ) {
-    THR  theta = this->sorted_data[0] - this->eps;
-    EDGE edge  = this->naive_calc_edge( theta, dist, true );
-    EDGE edge_tmp = edge;
-    HYPOTHESIS_1D hypothesis_1d;
-    for (int k=0; k<this->m; ++k) {
-        int idx = k;
-        while (idx < this->m && this->sorted_data[idx] == this->sorted_data[idx+1]) ++idx;
-        THR  theta_tmp =  (this->sorted_data[idx] + this->sorted_data[idx+1]) / 2.0;
-        if (idx == this->m-1) theta_tmp = this->sorted_data[m-1] + this->eps;
-        for (int s=k; s<idx+1; ++s) {
-            edge_tmp += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], true);
-        }
-        k = idx;
-        if ( edge_tmp > edge ) {
-            edge  = edge_tmp;
-            theta = theta_tmp;
+        double thr = (tmp[i] + tmp[i+1]) / 2.0;
+        this->threshoulds.push_back(thr);
+        f = std::bind(predict, thr, true, std::placeholders::_1);
+        this->classifiers.push_back(f);
+        if (!one_side) {
+            g = std::bind(predict, thr, false, std::placeholders::_1);
+            this->classifiers.push_back(g);
         }
     }
+    thr = tmp[tmp.size()-1] + this->eps;
+    this->threshoulds.push_back(thr);
+    f = std::bind(predict, thr, true, std::placeholders::_1);
+    this->classifiers.push_back(f);
+    if (!one_side) {
+        g = std::bind(predict, thr, false, std::placeholders::_1);
+        this->classifiers.push_back(g);
+    }
 
-    hypothesis_1d.first = theta; hypothesis_1d.second = true;
-    return std::make_pair( edge, hypothesis_1d );
+    // =====
+    // calculate number of stumps
+    // =====
+    this->number_of_stump = this->threshoulds.size();
+    if (!one_side) this->number_of_stump *= 2;
 }
-std::pair< EDGE, HYPOTHESIS_1D > decisionstump_1d::stump( DIST dist ) {
-    if (this->one_side) return this->stump_one_side( dist );
-    THR  theta  = this->sorted_data[0] - this->eps;
-    EDGE edge_1 = this->naive_calc_edge( theta, dist, true );
-    EDGE edge_2 = this->naive_calc_edge( theta, dist, false );
-    EDGE edge   = std::max(edge_1, edge_2);
-    SENSE sns   = (edge_1 >= edge_2) ? true : false;
-    HYPOTHESIS_1D hypothesis_1d;
-    for (int k=0; k<this->m; ++k) {
-        int idx = k;
-        while (idx < this->m && this->sorted_data[idx] == this->sorted_data[idx+1]) ++idx;
-        THR  theta_tmp =  (this->sorted_data[idx] + this->sorted_data[idx+1]) / 2.0;
-        if (idx == this->m-1)
-            theta_tmp = this->sorted_data[m-1] + this->eps;
 
-        for (int s=k; s<idx+1; ++s) {
-            edge_1 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], true);
-            edge_2 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], false);
+std::pair<double, std::function<int(double)> >
+decisionstump_1d::
+stump_one_side(std::vector<double> dist)
+{
+    auto f_ptr = this->classifiers.begin();
+    std::function<int(double)> f = *f_ptr;
+    std::function<int(double)> max_edge_classifier = *f_ptr;
+    double max_edge = this->naive_calc_edge(dist, f);
+
+    double edge = max_edge;
+    size_t number_of_classifiers = this->classifiers.size();
+    auto thr_ptr = this->threshoulds.begin()+1;
+    int k = 0;
+    f_ptr += 2;
+    while(k < this->m && f_ptr < this->classifiers.end()) {
+        f = *f_ptr;
+        while (k < this->m && this->sorted_data[k] < *thr_ptr) {
+            edge += 2 * dist[this->sorted_index[k]]
+                      * this->sorted_label[k]
+                      * f(this->sorted_data[k]);
+            ++k;
         }
-        k = idx;
-        if ( std::max(edge_1, edge_2) >= edge ) {
-            edge  = std::max(edge_1, edge_2);
-            theta = theta_tmp;
-            sns   = (edge_1 >= edge_2) ? true : false;
+        if (edge > max_edge) {
+            max_edge = edge;
+            max_edge_classifier = f;
         }
+        f_ptr += 2;
+        ++thr_ptr;
     }
-
-    hypothesis_1d.first = theta; hypothesis_1d.second = sns;
-    return std::make_pair( edge, hypothesis_1d );
+    return std::make_pair(max_edge, max_edge_classifier);
 }
 
-int decisionstump_1d::h( THR theta, double val, SENSE sns ) {
-    int prediction;
-    if (sns) {
-        prediction = (theta < val) ? 1 : -1;
-    } else {
-        prediction = (theta > val) ? 1 : -1;
+//std::pair<double, std::function<int(double)> >
+//decisionstump_1d::
+//stump_one_side_gumbel(std::vector<double> dist,
+//                      double eta)
+//{
+//    auto ptr = this->classifiers.begin();
+//    int k = 0;
+//    double max_edge_classifier = *ptr;
+//    double thr = max_edge_thr;
+//    double edge = this->naive_calc_edge(thr, dist, true);
+//    double edge_with_gumbel_noize, minimum_edge_with_gumbel_noise;
+//    HYPOTHESIS_1D hypothesis_1d;
+//
+//    std::random_device rnd;
+//    std::mt19937_64    mt64(rnd());
+//    std::uniform_real_distribution< double > gen(0.0, 1.0);
+//    double gumbel_noise;
+//
+//    gumbel_noise = log(log( 1.0/gen(mt64) ));
+//    minimum_edge_with_gumbel_noise = (-1) * eta * edge + gumbel_noise;
+//
+//    while(k < this->m) {
+//        thr = this->threshoulds[threshould_idx];
+//        while (k < this->m && this->sorted_data[k] < thr) {
+//            edge += 2 * dist[this->sorted_index[k]]
+//                      * this->sorted_label[k]
+//                      * this->h(thr, this->sorted_data[k], true);
+//            ++k;
+//        }
+//        ++threshould_idx;
+//        gumbel_noise = log(log( 1.0/gen(mt64) ));
+//        edge_with_gumbel_noize = (-1) * eta * edge + gumbel_noise;
+//
+//        if (edge_with_gumbel_noize < minimum_edge_with_gumbel_noise) {
+//            minimum_edge_with_gumbel_noise = edge_with_gumbel_noize;
+//            max_edge_thr = thr;
+//        }
+//    }
+//
+//    hypothesis_1d.first = max_edge_thr; hypothesis_1d.second = true;
+//    return std::make_pair( minimum_edge_with_gumbel_noise, hypothesis_1d );
+//}
+
+std::pair<double, std::function<int(double)> >
+decisionstump_1d::
+stump(std::vector<double> dist)
+{
+    if (this->one_side)
+        return this->stump_one_side(dist);
+    int    k = 0;
+    auto   f_ptr  = this->classifiers.begin();
+    auto   f = *f_ptr;
+    double edge_1 = this->naive_calc_edge(dist, f);
+    double edge_2 = -1 * edge_1;
+    double max_edge            = (edge_1 > edge_2) ? edge_1 : edge_2;
+    auto   max_edge_classifier = (edge_1 > edge_2) ? *f_ptr : *(f_ptr+1);
+    auto   thr_ptr = this->threshoulds.begin();
+
+    while(k < this->m && f_ptr < this->classifiers.end()) {
+        f = *f_ptr;
+        while(k < this->m && this->sorted_data[k] < *thr_ptr) {
+            edge_1 += 2 * dist[this->sorted_index[k]]
+                        * this->sorted_label[k]
+                        * f(this->sorted_data[k]);
+            ++k;
+        }
+        edge_2 = -1 * edge_1;
+        if (std::max(edge_1, edge_2) > max_edge) {
+            max_edge_classifier = (edge_1 > edge_2) ? *f_ptr : *(f_ptr+1);
+            max_edge            = (edge_1 > edge_2) ? edge_1 : edge_2;
+        }
+        ++thr_ptr;
+        f_ptr += 2;
     }
-    return prediction;
+
+    return std::make_pair(max_edge, max_edge_classifier);
 }
 
+//std::pair< double, HYPOTHESIS_1D > decisionstump_1d::stump_gumbel( DIST dist, double eta ) {
+//    if (this->one_side) return this->stump_one_side_gumbel( dist, eta );
+//    double  theta  = this->sorted_data[0] - this->eps; // 閾値
+//    double edge_1 = this->naive_calc_edge( theta, dist, true );
+//    double edge_2 = this->naive_calc_edge( theta, dist, false );
+//    double edge_1_r, edge_2_r;
+//    double edge;
+//    SENSE sns   = (edge_1 < edge_2) ? true : false;
+//    HYPOTHESIS_1D hypothesis_1d;
+//
+//    // 追加された変数
+//    std::random_device rnd;
+//    std::mt19937_64    mt64(rnd());
+//    std::uniform_real_distribution< double > gen(0.0, 1.0);
+//    double rval = gen(mt64);
+//
+//    rval = log( log( 1.0 / rval ) );
+//    edge_1_r = -eta * edge_1 + rval;
+//    rval = gen(mt64);
+//    rval = log( log( 1.0 / rval ) );
+//    edge_2_r = -eta * edge_2 + rval;
+//    edge = std::min(edge_1_r, edge_2_r);
+//
+//    for (int k=0; k<this->m; ++k) {
+//        int idx = k;
+//        while (idx < this->m && this->sorted_data[idx] == this->sorted_data[idx+1]) ++idx;
+//        double  theta_tmp =  (this->sorted_data[idx] + this->sorted_data[idx+1]) / 2.0;
+//        if (idx == this->m-1) theta_tmp = this->sorted_data[m-1] + this->eps;
+//        // double  theta_tmp = (this->sorted_data[k] + this->sorted_data[k+1]) / 2.0;
+//
+//        for (int s=k; s<idx+1; ++s) {
+//            edge_1 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], true);
+//            edge_2 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], false);
+//        }
+//        k = idx;
+//
+//        rval = gen(mt64);
+//        rval = log( log( 1.0 / rval ) );
+//        edge_1_r = - eta * edge_1 + rval;
+//
+//        rval = gen(mt64);
+//        rval = log( log( 1.0 / rval ) );
+//        edge_2_r = -eta * edge_2 + rval;
+//
+//        edge = std::max(edge_1_r, edge_2_r);
+//        if ( std::min(edge_1_r, edge_2_r) < edge ) {
+//            edge  = std::min(edge_1_r, edge_2_r);
+//            theta = theta_tmp;
+//            sns   = (edge_1_r < edge_2_r) ? true : false;
+//        }
+//    }
+//
+//    hypothesis_1d.first = theta; hypothesis_1d.second = sns;
+//    return std::make_pair( edge, hypothesis_1d );
+//}
 
-EDGE decisionstump_1d::naive_calc_edge( THR theta, DIST dist, SENSE sns ) {
-    EDGE edge = 0.0;
-    for (int k=0; k<this->m; ++k) {
-        double yh = this->sorted_label[k] * this->h( theta, this->sorted_data[k], sns );
-        edge += dist[ this->sorted_index[k] ] * yh;
-    }
+double
+decisionstump_1d::
+naive_calc_edge(std::vector<double> dist,
+                std::function<int(double)> f)
+{
+    double edge = 0.0;
+    for (int k=0; k<this->m; ++k)
+        edge += dist[this->sorted_index[k]] *
+                this->sorted_label[k] * f(this->sorted_data[k]);
     return edge;
 }
 
-MATRIX decisionstump_1d::all_edge_vector( const DAT &dat, const LAB &lab, const size_t &idx ) {
-    MATRIX ev_mat;
-    THR theta;
-    VECTOR v(this->m), w(this->m);
-    for (const double theta : this->threshoulds) {
-        for (int i=0; i<this->m; ++i) {
-            v[i] = lab[i] * this->h( theta, dat[i][idx], true );
-            if (!this->one_side) w[i] = lab[i] * this->h( theta, dat[i][idx], false );
+std::vector<std::vector<double> >
+decisionstump_1d::
+all_edge_vector(const std::vector<std::vector<double> >&dat,
+                const std::vector<int> &lab,
+                const size_t &idx )
+{
+    double theta;
+    if (this->ev_mat.size() > 0)
+        return this->ev_mat;
+    std::vector<double> v(this->m), w(this->m);
+    for(std::function<int(double)> f : this->classifiers) {
+        for(int i=0; i<this->m; ++i) {
+            v[i] = lab[i] * f(dat[i][idx]);
         }
-        ev_mat.push_back(v);
-        if (!one_side) ev_mat.push_back(w);
+        this->ev_mat.push_back(v);
     }
-    return ev_mat;
+    return this->ev_mat;
 }
 
