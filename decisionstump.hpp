@@ -12,17 +12,15 @@ private:
     std::vector<int> label;
     std::vector<decisionstump_1d> dstumps;
     bool one_side;
-    size_t m; // サンプル数
-    size_t d; // 各サンプルの次元数
+    size_t m;
+    size_t d;
     size_t number_of_stump;
 public:
     decisionstump();
     decisionstump(std::vector<std::vector<double> >, std::vector<int>);
     decisionstump(std::vector<std::vector<double> >, std::vector<int>, bool);
     std::function<int(std::vector<double>)> stump(std::vector<double>);
-    // std::function<int(double)> stump_gumbel(std::vector<double>, double);
     std::vector<double> edge_vector(const std::vector< double >&);
-    // std::vector<double> edge_vector_gumbel(const std::vector<double>&, double);
     std::vector<std::vector<double> >
         all_edge_vector_at(size_t);
     size_t get_number_of_stump();

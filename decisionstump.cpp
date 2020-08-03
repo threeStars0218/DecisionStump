@@ -77,33 +77,6 @@ stump(std::vector<double> dist)
     return std::bind(pred, max_edge_f, max_edge_idx, std::placeholders::_1);
 }
 
-// HYPOTHESIS decisionstump::stump_gumbel( DIST dist, double eta ) {
-//     std::pair< EDGE, HYPOTHESIS_1D > edge_and_hyp = dstumps[0].stump_gumbel( dist, eta );
-//     INDEX max_edge_index = 0;
-// 
-//     for (int i=1; i<this->d; ++i) {
-//         std::pair< EDGE, HYPOTHESIS_1D > tmp = dstumps[i].stump_gumbel( dist, eta );
-//         if (tmp.first < edge_and_hyp.first) {
-//             edge_and_hyp = tmp;
-//             max_edge_index = i;
-//         }
-//     }
-//     return std::make_pair( max_edge_index, edge_and_hyp.second );
-// }
-// 
-// // i番目のデータを第k成分でstump
-// int decisionstump::h( THR theta, double x, SENSE sns ) {
-//     int prediction;
-//     if (sns) {
-//         prediction = (theta < x) ? 1 : -1;
-//     } else {
-//         prediction = (theta > x) ? 1 : -1;
-//     }
-//     return prediction;
-// }
-
-// HYPOTHESIS_1D std::pair< THR, SENSE > // 1次元データに対する仮説. (閾値, 不等号の向き) の二つ組で表現.
-// HYPOTHESIS    std::pair< INDEX, HYPOTHESIS_1D > // 仮説.
 std::vector<double>
 decisionstump::
 edge_vector(const std::vector<double> &dist)
@@ -115,19 +88,3 @@ edge_vector(const std::vector<double> &dist)
     return ev;
 }
 
-//VECTOR decisionstump::edge_vector_gumbel( const DIST &dist, double eta ) {
-//    VECTOR     u( this->m, 0.0 );
-//    std::pair< INDEX, HYPOTHESIS_1D > idx_and_hyp = this->stump_gumbel( dist, eta );
-//    INDEX idx = idx_and_hyp.first;
-//    HYPOTHESIS_1D hh = idx_and_hyp.second;
-//    for (int k=0; k<this->m; ++k) {
-//        // u[k] = (double) this->label[k] * this->dstumps[idx].h(hh.first, this->data[k][idx], hh.second);
-//        u[k] = (double) this->label[k] * this->h(hh.first, this->data[k][idx], hh.second);
-//    }
-//    //double gamma = 0.0;
-//    //for (int i=0; i<this->m; ++i) gamma += dist[i] * u[i];
-//    return u;
-//}
-
-// std::pair< VECTOR, MATRIX > all_edge_vector_with_edge_at( size_t ) {
-// }

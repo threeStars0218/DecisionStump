@@ -110,49 +110,6 @@ stump_one_side(std::vector<double> dist)
     return std::make_pair(max_edge, max_edge_classifier);
 }
 
-//std::pair<double, std::function<int(double)> >
-//decisionstump_1d::
-//stump_one_side_gumbel(std::vector<double> dist,
-//                      double eta)
-//{
-//    auto ptr = this->classifiers.begin();
-//    int k = 0;
-//    double max_edge_classifier = *ptr;
-//    double thr = max_edge_thr;
-//    double edge = this->naive_calc_edge(thr, dist, true);
-//    double edge_with_gumbel_noize, minimum_edge_with_gumbel_noise;
-//    HYPOTHESIS_1D hypothesis_1d;
-//
-//    std::random_device rnd;
-//    std::mt19937_64    mt64(rnd());
-//    std::uniform_real_distribution< double > gen(0.0, 1.0);
-//    double gumbel_noise;
-//
-//    gumbel_noise = log(log( 1.0/gen(mt64) ));
-//    minimum_edge_with_gumbel_noise = (-1) * eta * edge + gumbel_noise;
-//
-//    while(k < this->m) {
-//        thr = this->threshoulds[threshould_idx];
-//        while (k < this->m && this->sorted_data[k] < thr) {
-//            edge += 2 * dist[this->sorted_index[k]]
-//                      * this->sorted_label[k]
-//                      * this->h(thr, this->sorted_data[k], true);
-//            ++k;
-//        }
-//        ++threshould_idx;
-//        gumbel_noise = log(log( 1.0/gen(mt64) ));
-//        edge_with_gumbel_noize = (-1) * eta * edge + gumbel_noise;
-//
-//        if (edge_with_gumbel_noize < minimum_edge_with_gumbel_noise) {
-//            minimum_edge_with_gumbel_noise = edge_with_gumbel_noize;
-//            max_edge_thr = thr;
-//        }
-//    }
-//
-//    hypothesis_1d.first = max_edge_thr; hypothesis_1d.second = true;
-//    return std::make_pair( minimum_edge_with_gumbel_noise, hypothesis_1d );
-//}
-
 std::pair<double, std::function<int(double)> >
 decisionstump_1d::
 stump(std::vector<double> dist)
@@ -188,61 +145,6 @@ stump(std::vector<double> dist)
     return std::make_pair(max_edge, max_edge_classifier);
 }
 
-//std::pair< double, HYPOTHESIS_1D > decisionstump_1d::stump_gumbel( DIST dist, double eta ) {
-//    if (this->one_side) return this->stump_one_side_gumbel( dist, eta );
-//    double  theta  = this->sorted_data[0] - this->eps; // 閾値
-//    double edge_1 = this->naive_calc_edge( theta, dist, true );
-//    double edge_2 = this->naive_calc_edge( theta, dist, false );
-//    double edge_1_r, edge_2_r;
-//    double edge;
-//    SENSE sns   = (edge_1 < edge_2) ? true : false;
-//    HYPOTHESIS_1D hypothesis_1d;
-//
-//    // 追加された変数
-//    std::random_device rnd;
-//    std::mt19937_64    mt64(rnd());
-//    std::uniform_real_distribution< double > gen(0.0, 1.0);
-//    double rval = gen(mt64);
-//
-//    rval = log( log( 1.0 / rval ) );
-//    edge_1_r = -eta * edge_1 + rval;
-//    rval = gen(mt64);
-//    rval = log( log( 1.0 / rval ) );
-//    edge_2_r = -eta * edge_2 + rval;
-//    edge = std::min(edge_1_r, edge_2_r);
-//
-//    for (int k=0; k<this->m; ++k) {
-//        int idx = k;
-//        while (idx < this->m && this->sorted_data[idx] == this->sorted_data[idx+1]) ++idx;
-//        double  theta_tmp =  (this->sorted_data[idx] + this->sorted_data[idx+1]) / 2.0;
-//        if (idx == this->m-1) theta_tmp = this->sorted_data[m-1] + this->eps;
-//        // double  theta_tmp = (this->sorted_data[k] + this->sorted_data[k+1]) / 2.0;
-//
-//        for (int s=k; s<idx+1; ++s) {
-//            edge_1 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], true);
-//            edge_2 += 2*dist[this->sorted_index[s]]*this->sorted_label[s]*this->h(theta_tmp, this->sorted_data[s], false);
-//        }
-//        k = idx;
-//
-//        rval = gen(mt64);
-//        rval = log( log( 1.0 / rval ) );
-//        edge_1_r = - eta * edge_1 + rval;
-//
-//        rval = gen(mt64);
-//        rval = log( log( 1.0 / rval ) );
-//        edge_2_r = -eta * edge_2 + rval;
-//
-//        edge = std::max(edge_1_r, edge_2_r);
-//        if ( std::min(edge_1_r, edge_2_r) < edge ) {
-//            edge  = std::min(edge_1_r, edge_2_r);
-//            theta = theta_tmp;
-//            sns   = (edge_1_r < edge_2_r) ? true : false;
-//        }
-//    }
-//
-//    hypothesis_1d.first = theta; hypothesis_1d.second = sns;
-//    return std::make_pair( edge, hypothesis_1d );
-//}
 
 double
 decisionstump_1d::
